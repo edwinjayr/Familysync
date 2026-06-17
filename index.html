@@ -7,6 +7,14 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏠</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>tailwind.config = { darkMode: 'class', }</script>
+    
+    <!-- System Theme Detection (Runs instantly to prevent white flash) -->
+    <script>
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+
     <style>
         ::-webkit-scrollbar { display: none; }
         body { -ms-overflow-style: none; scrollbar-width: none; }
@@ -21,6 +29,7 @@
 
     <div class="max-w-md mx-auto min-h-screen relative shadow-2xl overflow-x-hidden font-sans bg-gray-50 dark:bg-gray-900">
         
+        <!-- LOGIN SCREEN -->
         <div id="loginScreen" class="absolute inset-0 bg-gray-100 dark:bg-gray-900 z-50 flex flex-col items-center justify-center p-6">
             <h1 class="text-3xl font-bold mb-8 transition-transform hover:scale-110 duration-300">FamilySync 🏠</h1>
             <h2 class="text-xl mb-6 font-medium text-gray-600 dark:text-gray-300">Who is logging in?</h2>
@@ -28,6 +37,7 @@
             <button onclick="toggleDarkMode()" class="mt-12 p-3 bg-gray-200 dark:bg-gray-800 rounded-full text-xl shadow hover:scale-110 transition-transform"><span id="login-theme-icon">🌙</span></button>
         </div>
 
+        <!-- MAIN APP CONTENT -->
         <div id="appContent" style="display: none;" class="pb-24">
             
             <header class="flex justify-between items-center p-4 bg-white dark:bg-gray-800 shadow z-10 relative">
@@ -40,8 +50,10 @@
 
             <main class="p-4 space-y-4">
 
+                <!-- 1. HOME TAB -->
                 <div id="tab-home" class="tab-content active">
                     
+                    <!-- Time & Weather Dashboard -->
                     <section class="bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-xl p-5 shadow-md mb-4 flex justify-between items-center transition-transform hover:scale-[1.02] duration-300">
                         <div>
                             <h2 id="timeWidget" class="text-3xl font-bold tracking-tight">--:--</h2>
@@ -53,12 +65,14 @@
                         </div>
                     </section>
 
+                    <!-- Admin Announcement Button -->
                     <div id="announceBtnContainer" class="hidden mb-4">
                         <button onclick="makeAnnouncement()" class="w-full bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-bold py-3 rounded-xl shadow transition-transform active:scale-95 flex items-center justify-center gap-2">
                             <span class="text-xl">📢</span> Make Family Announcement
                         </button>
                     </div>
 
+                    <!-- Upcoming Events on Home -->
                     <h3 class="font-bold mb-2 text-sm uppercase text-purple-500">📅 Upcoming Events</h3>
                     <div id="homeEventList" class="mb-4"></div>
 
@@ -66,6 +80,7 @@
                     <div id="homeTaskList" class="space-y-3"></div>
                 </div>
 
+                <!-- 2. TASKS TAB -->
                 <div id="tab-tasks" class="tab-content">
                     
                     <section id="adminTaskArea" class="hidden bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800 mb-4 text-sm transition-all">
@@ -98,6 +113,7 @@
                     <div id="allTaskList" class="space-y-3"></div>
                 </div>
 
+                <!-- 3. FAMILY TAB -->
                 <div id="tab-family" class="tab-content">
                     <section id="adminMembersArea" class="hidden bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800 mb-4">
                         <h3 class="font-bold text-blue-800 dark:text-blue-200 mb-2">👥 Add Member</h3>
@@ -115,6 +131,7 @@
                     <div id="familyList" class="space-y-2 text-sm"></div>
                 </div>
 
+                <!-- 4. CALENDAR TAB -->
                 <div id="tab-calendar" class="tab-content">
                     <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
                         <h3 class="font-bold mb-3 text-sm">Upcoming Events</h3>
@@ -127,6 +144,7 @@
                     </div>
                 </div>
 
+                <!-- 5. CHAT TAB -->
                 <div id="tab-chat" class="tab-content">
                     <div class="bg-white dark:bg-gray-800 rounded-xl flex flex-col h-[60vh] border border-gray-200 dark:border-gray-700 relative">
                         <div id="chatBox" class="flex-1 p-4 overflow-y-auto space-y-3 text-sm scroll-smooth"></div>
@@ -142,6 +160,7 @@
                     </div>
                 </div>
 
+                <!-- 6. FOOD & PANTRY TAB -->
                 <div id="tab-food" class="tab-content">
                     
                     <section class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm mb-4">
@@ -165,6 +184,7 @@
 
             </main>
 
+            <!-- Bottom Navigation -->
             <nav class="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex justify-between px-2 py-2 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-20">
                 <button onclick="switchTab('tab-home')" class="flex flex-col items-center w-[16%] text-gray-400 hover:text-blue-500 hover:-translate-y-1 transition-all"><span class="text-xl">🏠</span><span class="text-[9px] font-bold">Home</span></button>
                 <button onclick="switchTab('tab-tasks')" class="flex flex-col items-center w-[16%] text-gray-400 hover:text-blue-500 hover:-translate-y-1 transition-all"><span class="text-xl">✅</span><span class="text-[9px] font-bold">Tasks</span></button>
@@ -204,7 +224,9 @@
         };
 
         function init() {
-            const saved = localStorage.getItem('fs_data_v5');
+            syncThemeIcons(); // Set theme icons based on system check from the <head>
+
+            const saved = localStorage.getItem('fs_data_v6');
             if (saved) data = JSON.parse(saved);
             
             const savedUser = sessionStorage.getItem('fs_currentUser');
@@ -225,7 +247,7 @@
         }
 
         function save() {
-            localStorage.setItem('fs_data_v5', JSON.stringify(data));
+            localStorage.setItem('fs_data_v6', JSON.stringify(data));
             if(currentUser) renderAll();
         }
 
@@ -272,7 +294,8 @@
             const isParent = (user.name.toLowerCase() === 'daddy' || user.name.toLowerCase() === 'mommy');
 
             if (isParent) {
-                const pin = prompt(`Enter PIN for ${user.name} (Default is 1235):`);
+                // PIN HINT HAS BEEN REMOVED HERE
+                const pin = prompt(`Enter PIN for ${user.name}:`);
                 if (pin !== "1235") {
                     alert("Incorrect PIN!");
                     return;
@@ -307,25 +330,40 @@
             renderLoginScreen();
         }
 
-        // --- NAVIGATION ---
+        // --- NAVIGATION & THEME ---
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
             
-            // Scroll chat to bottom when opened
             if(tabId === 'tab-chat') {
                 const cb = document.getElementById('chatBox');
                 cb.scrollTop = cb.scrollHeight;
             }
         }
 
-        function toggleDarkMode() {
-            const html = document.documentElement;
-            html.classList.toggle('dark');
-            const icon = html.classList.contains('dark') ? '☀️' : '🌙';
-            document.getElementById('theme-icon').innerText = icon;
-            document.getElementById('login-theme-icon').innerText = icon;
+        function syncThemeIcons() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const icon = isDark ? '☀️' : '🌙';
+            const themeIcon = document.getElementById('theme-icon');
+            const loginThemeIcon = document.getElementById('login-theme-icon');
+            if (themeIcon) themeIcon.innerText = icon;
+            if (loginThemeIcon) loginThemeIcon.innerText = icon;
         }
+
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            syncThemeIcons();
+        }
+
+        // Listen for OS/System theme changes dynamically while app is open
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+            syncThemeIcons();
+        });
 
         // --- RENDERING ---
         function renderAll() {
@@ -629,7 +667,6 @@
                 data.messages.push({ sender: currentUser.name, image: event.target.result });
                 save();
                 
-                // reset input so the same file can be uploaded again if needed
                 document.getElementById('chatImageUploader').value = '';
             };
             reader.readAsDataURL(file);
