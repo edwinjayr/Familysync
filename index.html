@@ -24,7 +24,9 @@
         .check-btn:hover { border-color: #22c55e; background: #22c55e; color: white; transform: scale(1.1); }
     </style>
 </head>
-<body class="bg-gray-100 dark:bg-black transition-colors duration-300 text-gray-900 dark:text-white">
+<body class="bg-gray-100 dark:bg-black transition-colors duration-300 text-gray-900 dark:text-white relative">
+
+    <div id="toastContainer" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-[100] flex flex-col gap-2 w-[90%] max-w-md pointer-events-none"></div>
 
     <div class="max-w-md mx-auto min-h-screen relative shadow-2xl overflow-x-hidden font-sans bg-gray-50 dark:bg-gray-900">
         
@@ -44,7 +46,6 @@
                 <div class="flex items-center gap-2" id="headerUserInfo"></div>
                 <div class="flex items-center gap-3">
                     <div id="syncIndicator" class="hidden text-blue-500 animate-spin text-xl">🔄</div>
-                    
                     <button onclick="logout()" class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded-lg shadow font-bold transition-all hover:scale-105">Logout</button>
                     <button onclick="toggleDarkMode()" class="p-1 bg-gray-200 dark:bg-gray-700 rounded-full text-sm hover:scale-110 transition-transform"><span id="theme-icon">🌙</span></button>
                 </div>
@@ -63,7 +64,7 @@
                         </div>
                     </section>
 
-                    <div id="announceBtnContainer" class="hidden mb-4">
+                    <div id="announceBtnContainer" class="mb-4">
                         <button onclick="makeAnnouncement()" class="w-full bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-bold py-3 rounded-xl shadow transition-transform active:scale-95 flex items-center justify-center gap-2">
                             <span class="text-xl">📢</span> Make Family Announcement
                         </button>
@@ -183,24 +184,24 @@
 
     <script>
         // --- 1. CLOUD CONFIGURATION ---
-        // REPLACE THIS URL with your Cloudflare Worker URL when ready.
-        // If left blank, the app safely defaults to Local Storage without breaking.
         const API_URL = 'https://albanofam.edwinjayr.workers.dev/'; 
 
         // --- STATE MANAGEMENT ---
         let currentUser = null;
         let isAdmin = false;
         let pendingTaskId = null;
+        let lastNotified = {}; // Tracks timestamps of task notifications { taskId: timestamp }
 
-        // Default skeleton data. Only used if absolutely no cloud or local backup exists.
         let data = {
             members: [
                 { id: "m1", name: "Daddy", avatar: "👨" },
                 { id: "m2", name: "Mommy", avatar: "👩" },
-                { id: "m3", name: "Jay", avatar: "👦" },
-                { id: "m4", name: "Amber", avatar: "👧" },
-                { id: "m5", name: "Zynab", avatar: "👩" },
-                { id: "m6", name: "Zona", avatar: "👧" }
+                { id: "m3", name: "Dimple", avatar: "👨" },
+                { id: "m4", name: "Julius", avatar: "👨" },
+                { id: "m5", name: "Jay", avatar: "👦" },
+                { id: "m6", name: "Amber", avatar: "👧" },
+                { id: "m7", name: "Zynab", avatar: "👩" },
+                { id: "m8", name: "Zona", avatar: "👧" }
             ],
             tasks: [],
             events: [],
@@ -209,39 +210,33 @@
             pantryNotes: []
         };
 
-        // UI Helpers for Syncing Icon
         function showSync() { document.getElementById('syncIndicator').classList.remove('hidden'); }
         function hideSync() { document.getElementById('syncIndicator').classList.add('hidden'); }
 
         async function init() {
             syncThemeIcons();
+            setDateConstraint();
             document.getElementById('loginLoading').classList.remove('hidden');
             showSync();
 
-            // 1. Try to fetch from the Cloud
             if (API_URL !== '') {
                 try {
                     const response = await fetch(API_URL, { method: 'GET' });
                     const json = await response.json();
-                    
-                    // Crucial Safety Check: Only overwrite if the cloud gives us real data back
                     if (json && json.record && json.record.members) {
                         data = json.record;
-                        localStorage.setItem('fs_backup_safe', JSON.stringify(data)); // Save a safe local copy
+                        localStorage.setItem('fs_backup_safe', JSON.stringify(data)); 
                     }
                 } catch (error) {
-                    console.error("Cloud fetch failed. Falling back to local.", error);
                     loadLocalBackup();
                 }
             } else {
-                // If API_URL is blank, we just use local storage
                 loadLocalBackup();
             }
 
             hideSync();
             document.getElementById('loginLoading').classList.add('hidden');
             
-            // Re-login user if session exists
             const savedUser = sessionStorage.getItem('fs_currentUser');
             if (savedUser) {
                 const user = data.members.find(m => m.id === savedUser);
@@ -256,7 +251,16 @@
 
             updateDateTime();
             setInterval(updateDateTime, 1000);
+            
+            // Task Reminders Checker (Runs every 1 minute)
+            setInterval(checkTaskReminders, 60000);
+            
             fetchWeather();
+        }
+
+        function setDateConstraint() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('eventDate').setAttribute('min', today);
         }
 
         function loadLocalBackup() {
@@ -267,11 +271,9 @@
         }
 
         async function save() {
-            // Immediately save a local copy so the UI feels fast and data isn't lost
             localStorage.setItem('fs_backup_safe', JSON.stringify(data));
             if(currentUser) renderAll();
 
-            // Then try to upload to the cloud in the background
             if (API_URL !== '') {
                 showSync();
                 try {
@@ -280,12 +282,59 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(data)
                     });
-                } catch (error) {
-                    console.error("Failed to upload to cloud.", error);
-                    // We don't alert the user constantly, the local backup caught it.
-                }
+                } catch (error) {}
                 hideSync();
             }
+        }
+
+        // --- BACKGROUND NOTIFICATION LOOP ---
+        function requestNotificationPermission() {
+            if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+                Notification.requestPermission();
+            }
+        }
+
+        function checkTaskReminders() {
+            if (!currentUser) return;
+            const now = new Date();
+            const currentMins = now.getHours() * 60 + now.getMinutes();
+
+            const myPendingTasks = data.tasks.filter(t => t.status === 'pending' && t.assignees.includes(currentUser.id) && t.time);
+
+            myPendingTasks.forEach(task => {
+                let [h, m] = task.time.split(':').map(Number);
+                let taskMins = h * 60 + m;
+                
+                let diff = taskMins - currentMins;
+                let nowTimestamp = now.getTime();
+                let lastNotif = lastNotified[task.id] || 0;
+                let minsSinceLastNotif = (nowTimestamp - lastNotif) / 60000;
+
+                // Fire notification if exactly 10 mins before, OR overdue and hasn't been notified in 10 mins
+                if (diff <= 10 && diff > 0 && minsSinceLastNotif >= 10) {
+                    sendNotification("Upcoming Task", `${task.name} starts in ${diff} minutes!`);
+                    lastNotified[task.id] = nowTimestamp;
+                } else if (diff <= 0 && minsSinceLastNotif >= 10) {
+                    sendNotification("Task Reminder", `Don't forget to do: ${task.name}!`);
+                    lastNotified[task.id] = nowTimestamp;
+                }
+            });
+        }
+
+        function sendNotification(title, body) {
+            if ("Notification" in window && Notification.permission === "granted") {
+                new Notification(title, { body });
+            } else {
+                showToast(title + ": " + body);
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'bg-blue-600 text-white p-3 rounded-xl shadow-lg text-sm font-bold animate-pulse pointer-events-auto flex justify-between items-center';
+            toast.innerHTML = `<span>🔔 ${message}</span> <button onclick="this.parentElement.remove()" class="text-white ml-2 text-lg">✖</button>`;
+            document.getElementById('toastContainer').appendChild(toast);
+            setTimeout(() => { if (toast.parentElement) toast.remove(); }, 6000);
         }
 
         // --- DASHBOARD WIDGETS ---
@@ -300,9 +349,7 @@
                 const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=24.71&longitude=46.67&current_weather=true');
                 const weather = await res.json();
                 document.getElementById('weatherWidget').innerHTML = `🌤️ ${weather.current_weather.temperature}°C`;
-            } catch(e) {
-                console.log("Weather failed to load");
-            }
+            } catch(e) {}
         }
 
         // --- AUTHENTICATION ---
@@ -343,7 +390,9 @@
 
             currentUser = user;
             sessionStorage.setItem('fs_currentUser', currentUser.id);
+            requestNotificationPermission(); // Ask for notification permission upon successful login
             finishLogin();
+            checkTaskReminders(); // Run initial check
         }
 
         function finishLogin() {
@@ -424,8 +473,7 @@
         }
 
         function renderHome() {
-            document.getElementById('announceBtnContainer').style.display = isAdmin ? 'block' : 'none';
-
+            // Announcement button is now visible to all members
             const homeEvents = document.getElementById('homeEventList');
             if (data.events.length > 0) {
                 homeEvents.innerHTML = data.events.map(e => `
@@ -526,6 +574,10 @@
             if (msg) {
                 data.messages.push({ sender: currentUser.name, text: msg, isAnnounce: true });
                 save();
+                
+                if (Notification.permission === "granted") {
+                    new Notification("Family Announcement", { body: `${currentUser.name}: ${msg}` });
+                }
                 switchTab('tab-chat');
             }
         }
