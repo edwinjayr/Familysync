@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FamilySync</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏠</text></svg>">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class', }</script>
+    <style>
+        ::-webkit-scrollbar { display: none; }
+        body { -ms-overflow-style: none; scrollbar-width: none; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .check-btn { border: 2px solid #9ca3af; color: transparent; background: transparent; transition: all 0.2s; }
+        .check-btn:hover { border-color: #22c55e; background: #22c55e; color: white; transform: scale(1.1); }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-black transition-colors duration-300 text-gray-900 dark:text-white">
+
+    <div class="max-w-md mx-auto min-h-screen relative shadow-2xl overflow-x-hidden font-sans bg-gray-50 dark:bg-gray-900">
+        
+        <div id="loginScreen" class="absolute inset-0 bg-gray-100 dark:bg-gray-900 z-50 flex flex-col items-center justify-center p-6">
+            <h1 class="text-3xl font-bold mb-8 transition-transform hover:scale-110 duration-300">FamilySync 🏠</h1>
+            <h2 class="text-xl mb-6 font-medium text-gray-600 dark:text-gray-300">Who is logging in?</h2>
+            <div id="loginMembers" class="grid grid-cols-2 gap-4 w-full"></div>
+            <button onclick="toggleDarkMode()" class="mt-12 p-3 bg-gray-200 dark:bg-gray-800 rounded-full text-xl shadow hover:scale-110 transition-transform"><span id="login-theme-icon">🌙</span></button>
+        </div>
+
+        <div id="appContent" style="display: none;" class="pb-24">
+            
+            <header class="flex justify-between items-center p-4 bg-white dark:bg-gray-800 shadow z-10 relative">
+                <div class="flex items-center gap-2" id="headerUserInfo"></div>
+                <div class="flex gap-2">
+                    <button onclick="logout()" class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded-lg shadow font-bold transition-all hover:scale-105">Logout</button>
+                    <button onclick="toggleDarkMode()" class="p-1 bg-gray-200 dark:bg-gray-700 rounded-full text-sm hover:scale-110 transition-transform"><span id="theme-icon">🌙</span></button>
+                </div>
+            </header>
+
+            <main class="p-4 space-y-4">
+
+                <div id="tab-home" class="tab-content active">
+                    
+                    <section class="bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-xl p-5 shadow-md mb-4 flex justify-between items-center transition-transform hover:scale-[1.02] duration-300">
+                        <div>
+                            <h2 id="timeWidget" class="text-3xl font-bold tracking-tight">--:--</h2>
+                            <p id="dateWidget" class="text-sm text-blue-100 font-medium">---</p>
+                        </div>
+                        <div class="text-right">
+                            <div id="weatherWidget" class="text-2xl font-bold">🌤️ --°C</div>
+                            <p class="text-xs text-blue-100">Local Weather</p>
+                        </div>
+                    </section>
+
+                    <div id="announceBtnContainer" class="hidden mb-4">
+                        <button onclick="makeAnnouncement()" class="w-full bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-bold py-3 rounded-xl shadow transition-transform active:scale-95 flex items-center justify-center gap-2">
+                            <span class="text-xl">📢</span> Make Family Announcement
+                        </button>
+                    </div>
+
+                    <h3 class="font-bold mb-2 text-sm uppercase text-purple-500">📅 Upcoming Events</h3>
+                    <div id="homeEventList" class="mb-4"></div>
+
+                    <h3 class="font-bold mb-2 text-sm uppercase">🏠 All Active Tasks</h3>
+                    <div id="homeTaskList" class="space-y-3"></div>
+                </div>
+
+                <div id="tab-tasks" class="tab-content">
+                    
+                    <section id="adminTaskArea" class="hidden bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800 mb-4 text-sm transition-all">
+                        <h3 class="font-bold text-blue-800 dark:text-blue-200 mb-2">📝 Assign New Task</h3>
+                        <input type="text" id="taskName" placeholder="Task Name" class="w-full p-2 mb-2 rounded border dark:bg-gray-800 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        
+                        <div class="mb-2">
+                            <label class="text-xs font-bold text-gray-500">Assign To (Multiple allowed):</label>
+                            <div id="taskAssignees" class="flex gap-2 flex-wrap mt-1"></div>
+                        </div>
+
+                        <div class="flex gap-2 mb-2">
+                            <input type="time" id="taskTime" class="w-1/2 p-2 rounded border dark:bg-gray-800 dark:border-gray-700 text-sm">
+                            <select id="taskFreq" class="w-1/2 p-2 rounded border dark:bg-gray-800 dark:border-gray-700">
+                                <option value="once">Once</option><option value="daily">Daily</option><option value="weekly">Weekly</option>
+                            </select>
+                        </div>
+                        <label class="flex items-center space-x-2 mb-3 text-xs cursor-pointer">
+                            <input type="checkbox" id="taskRequiresProof"> <span>Requires Photo Proof</span>
+                        </label>
+                        <button onclick="addTask()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded shadow transition-all active:scale-95">Assign Task</button>
+                    </section>
+
+                    <section id="verificationArea" class="hidden mb-4">
+                        <h3 class="font-bold text-yellow-600 mb-2 text-sm uppercase">🔍 Needs Verification</h3>
+                        <div id="verifyList" class="space-y-2"></div>
+                    </section>
+
+                    <h3 class="font-bold mb-2 text-sm uppercase">📋 Task Directory</h3>
+                    <div id="allTaskList" class="space-y-3"></div>
+                </div>
+
+                <div id="tab-family" class="tab-content">
+                    <section id="adminMembersArea" class="hidden bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800 mb-4">
+                        <h3 class="font-bold text-blue-800 dark:text-blue-200 mb-2">👥 Add Member</h3>
+                        <div class="space-y-2 mb-3 text-sm">
+                            <input type="text" id="newMemberName" placeholder="Name" class="w-full p-2 rounded border dark:bg-gray-800 dark:border-gray-700">
+                            <div class="flex items-center gap-2">
+                                <label class="text-xs font-bold w-1/3">Profile Photo:</label>
+                                <input type="file" id="newMemberPhoto" accept="image/*" class="w-2/3 p-1 text-xs border rounded bg-white dark:bg-gray-800">
+                            </div>
+                            <button onclick="addMember()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded transition-all active:scale-95">Add to Family</button>
+                        </div>
+                    </section>
+
+                    <h3 class="font-bold mb-2 text-sm uppercase">👪 The Family</h3>
+                    <div id="familyList" class="space-y-2 text-sm"></div>
+                </div>
+
+                <div id="tab-calendar" class="tab-content">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+                        <h3 class="font-bold mb-3 text-sm">Upcoming Events</h3>
+                        <div class="flex gap-2 mb-4">
+                            <input type="date" id="eventDate" class="w-1/3 p-2 rounded border text-sm dark:bg-gray-700 dark:border-gray-600">
+                            <input type="text" id="eventTitle" placeholder="Event..." class="w-1/2 p-2 rounded border text-sm dark:bg-gray-700 dark:border-gray-600">
+                            <button onclick="addEvent()" class="w-1/6 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded transition-colors">+</button>
+                        </div>
+                        <ul id="eventList" class="space-y-2 text-sm"></ul>
+                    </div>
+                </div>
+
+                <div id="tab-chat" class="tab-content">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl flex flex-col h-[60vh] border border-gray-200 dark:border-gray-700 relative">
+                        <div id="chatBox" class="flex-1 p-4 overflow-y-auto space-y-3 text-sm scroll-smooth"></div>
+                        
+                        <div id="chatAutocomplete" class="hidden absolute bottom-14 left-0 w-full bg-white dark:bg-gray-800 border-t dark:border-gray-700 shadow-lg max-h-32 overflow-y-auto text-sm z-10"></div>
+                        
+                        <div class="p-3 border-t dark:border-gray-700 flex gap-2 relative items-center">
+                            <input type="file" id="chatImageUploader" accept="image/*" capture="environment" class="hidden">
+                            <button onclick="document.getElementById('chatImageUploader').click()" class="text-2xl text-gray-400 hover:text-blue-500 transition-colors">📷</button>
+                            <input type="text" id="chatMsg" autocomplete="off" placeholder="Message (@ to tag)..." class="flex-1 p-2 rounded border dark:bg-gray-700 dark:border-gray-600 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <button onclick="sendMessage()" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 text-white font-bold rounded transition-colors">Send</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-food" class="tab-content">
+                    
+                    <section class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm mb-4">
+                        <h3 class="font-bold mb-3 text-sm uppercase text-orange-500">🍲 Meal Suggestions</h3>
+                        <div class="flex gap-2 mb-3">
+                            <input type="text" id="newFoodItem" placeholder="Suggest a dish..." class="flex-1 p-2 rounded border text-sm dark:bg-gray-700 dark:border-gray-600">
+                            <button onclick="addFood()" class="bg-orange-500 hover:bg-orange-600 text-white px-3 font-bold rounded">+</button>
+                        </div>
+                        <ul id="foodList" class="space-y-2 text-sm"></ul>
+                    </section>
+
+                    <section class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm mb-4">
+                        <h3 class="font-bold mb-3 text-sm uppercase text-green-500">🛒 Pantry & Grocery Notes</h3>
+                        <div class="flex gap-2 mb-3">
+                            <input type="text" id="newNoteItem" placeholder="e.g. Out of detergent" class="flex-1 p-2 rounded border text-sm dark:bg-gray-700 dark:border-gray-600">
+                            <button onclick="addNote()" class="bg-green-500 hover:bg-green-600 text-white px-3 font-bold rounded">+</button>
+                        </div>
+                        <ul id="notesList" class="space-y-2 text-sm"></ul>
+                    </section>
+                </div>
+
+            </main>
+
+            <nav class="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex justify-between px-2 py-2 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-20">
+                <button onclick="switchTab('tab-home')" class="flex flex-col items-center w-[16%] text-gray-400 hover:text-blue-500 hover:-translate-y-1 transition-all"><span class="text-xl">🏠</span><span class="text-[9px] font-bold">Home</span></button>
+                <button onclick="switchTab('tab-tasks')" class="flex flex-col items-center w-[16%] text-gray-400 hover:text-blue-500 hover:-translate-y-1 transition-all"><span class="text-xl">✅</span><span class="text-[9px] font-bold">Tasks</span></button>
+                <button onclick="switchTab('tab-family')" class="flex flex-col items-center w-[16%] text-gray-400 hover:text-blue-500 hover:-translate-y-1 transition-all"><span class="text-xl">👥</span><span class="text-[9px] font-bold">Family</span></button>
+                <button onclick="switchTab('tab-calendar')" class="flex flex-col items-center w-[16%] text-gray-400 hover:text-blue-500 hover:-translate-y-1 transition-all"><span class="text-xl">📅</span><span class="text-[9px] font-bold">Events</span></button>
+                <button onclick="switchTab('tab-chat')" class="flex flex-col items-center w-[16%] text-gray-400 hover:text-blue-500 hover:-translate-y-1 transition-all"><span class="text-xl">💬</span><span class="text-[9px] font-bold">Chat</span></button>
+                <button onclick="switchTab('tab-food')" class="flex flex-col items-center w-[16%] text-gray-400 hover:text-blue-500 hover:-translate-y-1 transition-all"><span class="text-xl">🍔</span><span class="text-[9px] font-bold">Food</span></button>
+            </nav>
+        </div>
+    </div>
+
+    <input type="file" id="imageUploader" accept="image/*" class="hidden">
+
+    <script>
+        // --- STATE MANAGEMENT ---
+        let currentUser = null;
+        let isAdmin = false;
+        let pendingTaskId = null;
+
+        let data = {
+            members: [
+                { id: "m1", name: "Daddy", avatar: "👨" },
+                { id: "m2", name: "Mommy", avatar: "👩" },
+                { id: "m3", name: "Jay", avatar: "👦" },
+                { id: "m4", name: "Amber", avatar: "👧" },
+                { id: "m5", name: "Zynab", avatar: "👩" },
+                { id: "m6", name: "Zona", avatar: "👧" }
+            ],
+            tasks: [
+                { id: "t1", name: "Wash Dishes", assignees: ["m3", "m4", "m5", "m6"], time: "18:00", freq: "daily", proofReq: true, status: "pending", image: null, completedBy: null },
+                { id: "t2", name: "Sweep the Floor", assignees: ["m3", "m6"], time: "08:00", freq: "daily", proofReq: false, status: "pending", image: null, completedBy: null }
+            ],
+            events: [{ id: "e1", title: "Dentist Appointment", date: "2026-06-20" }],
+            messages: [{ sender: "System", text: "Welcome to FamilySync!" }],
+            foodMenu: ["Adobong Manok", "Leche Flan", "Fried Fish & Rice"],
+            pantryNotes: ["Low on detergent", "Need more garlic"]
+        };
+
+        function init() {
+            const saved = localStorage.getItem('fs_data_v5');
+            if (saved) data = JSON.parse(saved);
+            
+            const savedUser = sessionStorage.getItem('fs_currentUser');
+            if (savedUser) {
+                const user = data.members.find(m => m.id === savedUser);
+                if (user) {
+                    currentUser = user;
+                    isAdmin = (user.name.toLowerCase() === 'daddy' || user.name.toLowerCase() === 'mommy');
+                    finishLogin();
+                } else { renderLoginScreen(); }
+            } else {
+                renderLoginScreen();
+            }
+
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+            fetchWeather();
+        }
+
+        function save() {
+            localStorage.setItem('fs_data_v5', JSON.stringify(data));
+            if(currentUser) renderAll();
+        }
+
+        // --- DASHBOARD WIDGETS ---
+        function updateDateTime() {
+            const now = new Date();
+            document.getElementById('timeWidget').innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            document.getElementById('dateWidget').innerText = now.toLocaleDateString([], {weekday: 'long', month: 'short', day: 'numeric'});
+        }
+
+        async function fetchWeather() {
+            try {
+                const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=24.71&longitude=46.67&current_weather=true');
+                const weather = await res.json();
+                document.getElementById('weatherWidget').innerHTML = `🌤️ ${weather.current_weather.temperature}°C`;
+            } catch(e) {
+                console.log("Weather failed to load");
+            }
+        }
+
+        // --- AUTHENTICATION ---
+        function renderLoginScreen() {
+            document.getElementById('appContent').style.display = 'none';
+            document.getElementById('loginScreen').style.display = 'flex';
+            
+            const grid = document.getElementById('loginMembers');
+            grid.innerHTML = data.members.map(m => `
+                <button onclick="login('${m.id}')" class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col items-center hover:scale-105 hover:shadow-lg transition-all duration-300">
+                    ${getAvatarHTML(m.avatar, 'w-12 h-12 text-4xl mb-2')}
+                    <span class="font-bold">${m.name}</span>
+                </button>
+            `).join('');
+        }
+
+        function getAvatarHTML(avatarData, classes = "w-8 h-8 text-2xl") {
+            if (avatarData.startsWith('data:image')) {
+                return `<img src="${avatarData}" class="${classes} rounded-full object-cover border border-gray-300">`;
+            }
+            return `<div class="${classes} flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-full">${avatarData}</div>`;
+        }
+
+        function login(id) {
+            const user = data.members.find(m => m.id === id);
+            const isParent = (user.name.toLowerCase() === 'daddy' || user.name.toLowerCase() === 'mommy');
+
+            if (isParent) {
+                const pin = prompt(`Enter PIN for ${user.name} (Default is 1235):`);
+                if (pin !== "1235") {
+                    alert("Incorrect PIN!");
+                    return;
+                }
+                isAdmin = true;
+            } else {
+                isAdmin = false;
+            }
+
+            currentUser = user;
+            sessionStorage.setItem('fs_currentUser', currentUser.id);
+            finishLogin();
+        }
+
+        function finishLogin() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('appContent').style.display = 'block';
+            document.getElementById('headerUserInfo').innerHTML = `
+                ${getAvatarHTML(currentUser.avatar, 'w-8 h-8')}
+                <div class="leading-tight">
+                    <h1 class="text-sm font-bold tracking-tight">${currentUser.name}</h1>
+                    <p class="text-[10px] text-gray-500 uppercase">${isAdmin ? 'Admin' : 'Member'}</p>
+                </div>
+            `;
+            renderAll();
+        }
+
+        function logout() {
+            currentUser = null;
+            isAdmin = false;
+            sessionStorage.removeItem('fs_currentUser');
+            renderLoginScreen();
+        }
+
+        // --- NAVIGATION ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            
+            // Scroll chat to bottom when opened
+            if(tabId === 'tab-chat') {
+                const cb = document.getElementById('chatBox');
+                cb.scrollTop = cb.scrollHeight;
+            }
+        }
+
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            html.classList.toggle('dark');
+            const icon = html.classList.contains('dark') ? '☀️' : '🌙';
+            document.getElementById('theme-icon').innerText = icon;
+            document.getElementById('login-theme-icon').innerText = icon;
+        }
+
+        // --- RENDERING ---
+        function renderAll() {
+            document.getElementById('adminTaskArea').style.display = isAdmin ? 'block' : 'none';
+            document.getElementById('verificationArea').style.display = isAdmin ? 'block' : 'none';
+            document.getElementById('adminMembersArea').style.display = isAdmin ? 'block' : 'none';
+
+            if (isAdmin) {
+                document.getElementById('taskAssignees').innerHTML = data.members.map(m => `
+                    <label class="flex items-center space-x-1 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded cursor-pointer hover:bg-gray-200 transition-colors">
+                        <input type="checkbox" value="${m.id}" class="task-assignee-check">
+                        <span class="text-xs">${m.name}</span>
+                    </label>
+                `).join('');
+            }
+
+            renderHome();
+            renderFamily();
+            renderTasks();
+            renderEvents();
+            renderChat();
+            renderFood();
+        }
+
+        function renderHome() {
+            // Admin Announcement Button
+            document.getElementById('announceBtnContainer').style.display = isAdmin ? 'block' : 'none';
+
+            // Events
+            const homeEvents = document.getElementById('homeEventList');
+            if (data.events.length > 0) {
+                homeEvents.innerHTML = data.events.map(e => `
+                    <div class="bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 text-purple-800 dark:text-purple-200 p-3 rounded-lg text-sm mb-2 shadow-sm flex items-center gap-3">
+                        <span class="text-2xl">📅</span>
+                        <div><p class="font-bold">${e.date}</p><p>${e.title}</p></div>
+                    </div>`).join('');
+            } else {
+                homeEvents.innerHTML = '<p class="text-sm text-gray-500 italic mb-4">No upcoming events.</p>';
+            }
+
+            // Tasks
+            const homeList = document.getElementById('homeTaskList');
+            homeList.innerHTML = '';
+            const allActiveTasks = data.tasks.filter(t => t.status === 'pending');
+            allActiveTasks.forEach(t => homeList.innerHTML += generateTaskHTML(t, true));
+
+            if (homeList.innerHTML === '') homeList.innerHTML = '<p class="text-sm text-gray-500 italic">No active tasks right now! 🎉</p>';
+        }
+
+        function renderFamily() {
+            document.getElementById('familyList').innerHTML = data.members.map(m => `
+                <div class="flex justify-between items-center bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:-translate-y-1 transition-transform">
+                    <div class="flex items-center gap-3">
+                        ${getAvatarHTML(m.avatar, 'w-10 h-10 text-2xl')}
+                        <div>
+                            <p class="font-bold">${m.name}</p>
+                            <p class="text-xs text-gray-500 capitalize">${(m.name.toLowerCase() === 'daddy' || m.name.toLowerCase() === 'mommy') ? 'Admin' : 'Member'}</p>
+                        </div>
+                    </div>
+                    ${isAdmin ? `<button onclick="deleteMember('${m.id}')" class="text-red-500 text-xs font-bold hover:underline">Remove</button>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function renderTasks() {
+            const list = document.getElementById('allTaskList');
+            const verifyList = document.getElementById('verifyList');
+            list.innerHTML = ''; verifyList.innerHTML = '';
+
+            data.tasks.forEach(t => {
+                if (t.status === 'pending') {
+                    list.innerHTML += generateTaskHTML(t, true);
+                } else if (t.status === 'verification' && isAdmin) {
+                    const completer = data.members.find(m => m.id === t.completedBy);
+                    verifyList.innerHTML += `
+                        <div class="bg-yellow-50 dark:bg-yellow-900/30 p-3 rounded-xl border border-yellow-200 dark:border-yellow-700 hover:shadow-md transition-shadow">
+                            <p class="font-bold text-sm mb-1">${t.name} <span class="font-normal text-xs text-gray-500">(Submitted by: ${completer ? completer.name : 'Unknown'})</span></p>
+                            ${t.image ? `<img src="${t.image}" class="w-full h-32 object-cover rounded mb-2 border shadow-sm">` : ''}
+                            <div class="flex gap-2 mt-2">
+                                <button onclick="approveTask('${t.id}')" class="flex-1 bg-green-500 hover:bg-green-600 text-white text-xs py-2 rounded font-bold transition-colors">Approve Done</button>
+                                <button onclick="rejectTask('${t.id}')" class="flex-1 bg-red-500 hover:bg-red-600 text-white text-xs py-2 rounded font-bold transition-colors">Reject</button>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            if (list.innerHTML === '') list.innerHTML = '<p class="text-sm text-gray-500 italic">No active tasks.</p>';
+            if (verifyList.innerHTML === '') verifyList.innerHTML = '<p class="text-sm text-gray-500 italic">Queue is empty.</p>';
+        }
+
+        function formatTime12Hr(timeStr) {
+            if (!timeStr) return '';
+            let [h, m] = timeStr.split(':');
+            let ampm = h >= 12 ? 'PM' : 'AM';
+            h = h % 12 || 12;
+            return `${h}:${m} ${ampm}`;
+        }
+
+        function generateTaskHTML(t, showAssignee = true) {
+            const assignedUsers = t.assignees.map(id => data.members.find(m => m.id === id)).filter(Boolean);
+            const assignedNames = assignedUsers.map(u => u.name).join(', ');
+            
+            const isMyTask = t.assignees.includes(currentUser.id);
+            const reqImg = t.proofReq ? '📷 ' : '';
+            const displayTime = t.time ? `🕒 ${formatTime12Hr(t.time)} • ` : '';
+            
+            return `
+                <div class="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:-translate-y-1 hover:shadow-md transition-all duration-300 flex items-center justify-between">
+                    <div>
+                        <h4 class="font-bold text-base">${t.name}</h4>
+                        <p class="text-xs text-gray-500">
+                            ${showAssignee ? `<span class="font-semibold text-gray-700 dark:text-gray-300">${assignedNames}</span>` : ''} 
+                        </p>
+                        <p class="text-[10px] text-gray-400 mt-1">${displayTime}${reqImg}${t.freq}</p>
+                    </div>
+                    <div class="flex flex-col items-end gap-2">
+                        ${isMyTask || isAdmin ? `<button onclick="attemptTask('${t.id}')" class="check-btn w-8 h-8 rounded-full flex items-center justify-center text-lg font-bold">✓</button>` : `<span class="text-[10px] text-gray-400 uppercase tracking-widest">Locked</span>`}
+                        ${isAdmin ? `<button onclick="cancelTask('${t.id}')" class="text-[10px] text-red-500 font-bold hover:underline">Cancel</button>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- ACTIONS ---
+        function makeAnnouncement() {
+            const msg = prompt("What would you like to announce to the family?");
+            if (msg) {
+                data.messages.push({ sender: currentUser.name, text: msg, isAnnounce: true });
+                save();
+                switchTab('tab-chat'); // Move to chat to see it
+            }
+        }
+
+        function addMember() {
+            const name = document.getElementById('newMemberName').value;
+            const fileInput = document.getElementById('newMemberPhoto');
+            
+            if(!name) return alert("Enter a name!");
+
+            if (fileInput.files.length > 0) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    data.members.push({ id: 'm'+Date.now(), name, avatar: e.target.result });
+                    finishAddingMember();
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            } else {
+                data.members.push({ id: 'm'+Date.now(), name, avatar: "👤" });
+                finishAddingMember();
+            }
+        }
+        
+        function finishAddingMember() {
+            document.getElementById('newMemberName').value = '';
+            document.getElementById('newMemberPhoto').value = '';
+            save();
+        }
+
+        function deleteMember(id) {
+            if(!confirm("Remove this member?")) return;
+            data.members = data.members.filter(m => m.id !== id);
+            data.tasks.forEach(t => t.assignees = t.assignees.filter(userId => userId !== id));
+            data.tasks = data.tasks.filter(t => t.assignees.length > 0);
+            save();
+        }
+
+        function addTask() {
+            const name = document.getElementById('taskName').value;
+            const time = document.getElementById('taskTime').value;
+            const freq = document.getElementById('taskFreq').value;
+            const proofReq = document.getElementById('taskRequiresProof').checked;
+            
+            const checkboxes = document.querySelectorAll('.task-assignee-check:checked');
+            if(!name || checkboxes.length === 0) return alert("Missing name or assignees");
+            
+            const assigneesArray = Array.from(checkboxes).map(cb => cb.value);
+            
+            data.tasks.push({ 
+                id: 't'+Date.now(), 
+                name, 
+                assignees: assigneesArray, 
+                time,
+                freq, 
+                proofReq, 
+                status: 'pending', 
+                image: null,
+                completedBy: null
+            });
+
+            document.getElementById('taskName').value = '';
+            document.getElementById('taskTime').value = '';
+            checkboxes.forEach(cb => cb.checked = false);
+            save();
+            alert("Task Assigned!");
+        }
+        
+        function cancelTask(id) { data.tasks = data.tasks.filter(t => t.id !== id); save(); }
+
+        function attemptTask(taskId) {
+            const task = data.tasks.find(t => t.id === taskId);
+            task.completedBy = currentUser.id;
+
+            if (task.proofReq) {
+                pendingTaskId = taskId;
+                document.getElementById('imageUploader').click();
+            } else {
+                completeTaskFinal(task);
+            }
+        }
+
+        // Generic Document Image Uploader (For Tasks)
+        document.getElementById('imageUploader').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file || !pendingTaskId) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const task = data.tasks.find(t => t.id === pendingTaskId);
+                task.image = event.target.result;
+                task.status = 'verification';
+                alert("Photo uploaded! Sent for approval.");
+                pendingTaskId = null;
+                save();
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function completeTaskFinal(task) {
+            if (task.freq !== 'once') { 
+                task.status = 'pending'; 
+                task.image = null; 
+                task.completedBy = null;
+            } else { 
+                data.tasks = data.tasks.filter(t => t.id !== task.id); 
+            }
+            save();
+        }
+
+        function approveTask(id) { completeTaskFinal(data.tasks.find(t => t.id === id)); }
+        function rejectTask(id) {
+            const task = data.tasks.find(t => t.id === id);
+            task.status = 'pending'; 
+            task.image = null;
+            task.completedBy = null;
+            save();
+        }
+
+        function renderEvents() {
+            document.getElementById('eventList').innerHTML = data.events.map(e => `
+                <li class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border dark:border-gray-600 flex justify-between hover:scale-[1.02] transition-transform">
+                    <span>📅 <span class="text-blue-500 font-bold">${e.date}</span>: <b>${e.title}</b></span>
+                    ${isAdmin ? `<button onclick="data.events = data.events.filter(x => x.id !== '${e.id}'); save();" class="text-red-500 hover:scale-125 transition-transform">X</button>` : ''}
+                </li>`).join('');
+        }
+        function addEvent() {
+            const date = document.getElementById('eventDate').value;
+            const title = document.getElementById('eventTitle').value;
+            if(date && title) { data.events.push({id:'e'+Date.now(), date, title}); save(); }
+        }
+
+        // --- CHAT WITH MENTIONS & IMAGES ---
+        const chatInput = document.getElementById('chatMsg');
+        const chatAutocomplete = document.getElementById('chatAutocomplete');
+
+        chatInput.addEventListener('input', function() {
+            const val = this.value;
+            const match = val.match(/@(\w*)$/);
+            
+            if (match) {
+                const query = match[1].toLowerCase();
+                const matches = data.members.filter(m => m.name.toLowerCase().startsWith(query));
+                
+                if (matches.length > 0) {
+                    chatAutocomplete.innerHTML = matches.map(m => `
+                        <div class="p-2 border-b dark:border-gray-600 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2" onclick="insertMention('${m.name}')">
+                            ${getAvatarHTML(m.avatar, 'w-6 h-6 text-sm')} <span class="font-bold">${m.name}</span>
+                        </div>
+                    `).join('');
+                    chatAutocomplete.style.display = 'block';
+                } else {
+                    chatAutocomplete.style.display = 'none';
+                }
+            } else {
+                chatAutocomplete.style.display = 'none';
+            }
+        });
+
+        function insertMention(name) {
+            const val = chatInput.value;
+            chatInput.value = val.replace(/@\w*$/, `@${name} `);
+            chatAutocomplete.style.display = 'none';
+            chatInput.focus();
+        }
+
+        // Chat Image Uploader
+        document.getElementById('chatImageUploader').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                data.messages.push({ sender: currentUser.name, image: event.target.result });
+                save();
+                
+                // reset input so the same file can be uploaded again if needed
+                document.getElementById('chatImageUploader').value = '';
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function renderChat() {
+            document.getElementById('chatBox').innerHTML = data.messages.map(m => {
+                const isMe = m.sender === currentUser.name;
+                
+                if (m.isAnnounce) {
+                    return `
+                    <div class="mb-3 p-3 rounded-xl bg-yellow-100 dark:bg-yellow-900/40 border border-yellow-400 w-full text-center shadow-sm">
+                        <span class="font-bold text-yellow-800 dark:text-yellow-200 uppercase tracking-wide text-[10px]">📢 Announcement from ${m.sender}</span><br>
+                        <span class="font-bold text-yellow-900 dark:text-white text-base">${m.text}</span>
+                    </div>`;
+                }
+
+                let content = '';
+                if (m.image) {
+                    content = `<img src="${m.image}" class="rounded-lg w-full max-w-[200px] cursor-pointer hover:opacity-90">`;
+                } else if (m.text) {
+                    content = m.text.replace(/@(\w+)/g, '<span class="text-blue-600 dark:text-blue-400 font-bold bg-blue-100 dark:bg-blue-900/50 px-1 rounded">@$1</span>');
+                }
+
+                const alignment = isMe ? 'ml-auto bg-blue-100 dark:bg-blue-900' : 'mr-auto bg-gray-100 dark:bg-gray-700';
+
+                return `
+                <div class="mb-3 p-3 rounded-2xl ${alignment} w-fit max-w-[80%] shadow-sm hover:scale-[1.02] transition-transform">
+                    <span class="font-bold text-[10px] text-gray-500 uppercase">${m.sender}</span><br>
+                    <span class="text-sm">${content}</span>
+                </div>`;
+            }).join('');
+            
+            const cb = document.getElementById('chatBox');
+            cb.scrollTop = cb.scrollHeight;
+        }
+        
+        function sendMessage() {
+            const text = chatInput.value;
+            if(text) { 
+                data.messages.push({sender: currentUser.name, text}); 
+                chatInput.value = ''; 
+                chatAutocomplete.style.display = 'none';
+                save(); 
+            }
+        }
+
+        // --- FOOD & PANTRY ---
+        function renderFood() {
+            document.getElementById('foodList').innerHTML = data.foodMenu.map((f, i) => `
+                <li class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border dark:border-gray-600 flex justify-between hover:scale-[1.02] transition-transform">
+                    <span>🍲 <b>${f}</b></span>
+                    <button onclick="data.foodMenu.splice(${i},1); save();" class="text-red-500 hover:scale-125 transition-transform text-xs font-bold">X</button>
+                </li>`).join('');
+
+            document.getElementById('notesList').innerHTML = data.pantryNotes.map((n, i) => `
+                <li class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border dark:border-gray-600 flex justify-between hover:scale-[1.02] transition-transform">
+                    <span>🛒 <b>${n}</b></span>
+                    <button onclick="data.pantryNotes.splice(${i},1); save();" class="text-red-500 hover:scale-125 transition-transform text-xs font-bold">X</button>
+                </li>`).join('');
+        }
+
+        function addFood() {
+            const val = document.getElementById('newFoodItem').value;
+            if(val) { data.foodMenu.push(val); document.getElementById('newFoodItem').value = ''; save(); }
+        }
+
+        function addNote() {
+            const val = document.getElementById('newNoteItem').value;
+            if(val) { data.pantryNotes.push(val); document.getElementById('newNoteItem').value = ''; save(); }
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
