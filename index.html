@@ -8,7 +8,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>tailwind.config = { darkMode: 'class', }</script>
     
-    <!-- System Theme Detection (Runs instantly to prevent white flash) -->
     <script>
         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
             document.documentElement.classList.add('dark');
@@ -29,31 +28,30 @@
 
     <div class="max-w-md mx-auto min-h-screen relative shadow-2xl overflow-x-hidden font-sans bg-gray-50 dark:bg-gray-900">
         
-        <!-- LOGIN SCREEN -->
         <div id="loginScreen" class="absolute inset-0 bg-gray-100 dark:bg-gray-900 z-50 flex flex-col items-center justify-center p-6">
             <h1 class="text-3xl font-bold mb-8 transition-transform hover:scale-110 duration-300">FamilySync 🏠</h1>
             <h2 class="text-xl mb-6 font-medium text-gray-600 dark:text-gray-300">Who is logging in?</h2>
+            
+            <div id="loginLoading" class="text-blue-500 animate-pulse font-bold mb-4 hidden">Connecting to Cloud...</div>
+            
             <div id="loginMembers" class="grid grid-cols-2 gap-4 w-full"></div>
             <button onclick="toggleDarkMode()" class="mt-12 p-3 bg-gray-200 dark:bg-gray-800 rounded-full text-xl shadow hover:scale-110 transition-transform"><span id="login-theme-icon">🌙</span></button>
         </div>
 
-        <!-- MAIN APP CONTENT -->
         <div id="appContent" style="display: none;" class="pb-24">
             
             <header class="flex justify-between items-center p-4 bg-white dark:bg-gray-800 shadow z-10 relative">
                 <div class="flex items-center gap-2" id="headerUserInfo"></div>
-                <div class="flex gap-2">
+                <div class="flex items-center gap-3">
+                    <div id="syncIndicator" class="hidden text-blue-500 animate-spin text-xl">🔄</div>
+                    
                     <button onclick="logout()" class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded-lg shadow font-bold transition-all hover:scale-105">Logout</button>
                     <button onclick="toggleDarkMode()" class="p-1 bg-gray-200 dark:bg-gray-700 rounded-full text-sm hover:scale-110 transition-transform"><span id="theme-icon">🌙</span></button>
                 </div>
             </header>
 
             <main class="p-4 space-y-4">
-
-                <!-- 1. HOME TAB -->
                 <div id="tab-home" class="tab-content active">
-                    
-                    <!-- Time & Weather Dashboard -->
                     <section class="bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-xl p-5 shadow-md mb-4 flex justify-between items-center transition-transform hover:scale-[1.02] duration-300">
                         <div>
                             <h2 id="timeWidget" class="text-3xl font-bold tracking-tight">--:--</h2>
@@ -65,14 +63,12 @@
                         </div>
                     </section>
 
-                    <!-- Admin Announcement Button -->
                     <div id="announceBtnContainer" class="hidden mb-4">
                         <button onclick="makeAnnouncement()" class="w-full bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-bold py-3 rounded-xl shadow transition-transform active:scale-95 flex items-center justify-center gap-2">
                             <span class="text-xl">📢</span> Make Family Announcement
                         </button>
                     </div>
 
-                    <!-- Upcoming Events on Home -->
                     <h3 class="font-bold mb-2 text-sm uppercase text-purple-500">📅 Upcoming Events</h3>
                     <div id="homeEventList" class="mb-4"></div>
 
@@ -80,18 +76,14 @@
                     <div id="homeTaskList" class="space-y-3"></div>
                 </div>
 
-                <!-- 2. TASKS TAB -->
                 <div id="tab-tasks" class="tab-content">
-                    
                     <section id="adminTaskArea" class="hidden bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800 mb-4 text-sm transition-all">
                         <h3 class="font-bold text-blue-800 dark:text-blue-200 mb-2">📝 Assign New Task</h3>
                         <input type="text" id="taskName" placeholder="Task Name" class="w-full p-2 mb-2 rounded border dark:bg-gray-800 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        
                         <div class="mb-2">
                             <label class="text-xs font-bold text-gray-500">Assign To (Multiple allowed):</label>
                             <div id="taskAssignees" class="flex gap-2 flex-wrap mt-1"></div>
                         </div>
-
                         <div class="flex gap-2 mb-2">
                             <input type="time" id="taskTime" class="w-1/2 p-2 rounded border dark:bg-gray-800 dark:border-gray-700 text-sm">
                             <select id="taskFreq" class="w-1/2 p-2 rounded border dark:bg-gray-800 dark:border-gray-700">
@@ -113,7 +105,6 @@
                     <div id="allTaskList" class="space-y-3"></div>
                 </div>
 
-                <!-- 3. FAMILY TAB -->
                 <div id="tab-family" class="tab-content">
                     <section id="adminMembersArea" class="hidden bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800 mb-4">
                         <h3 class="font-bold text-blue-800 dark:text-blue-200 mb-2">👥 Add Member</h3>
@@ -126,12 +117,10 @@
                             <button onclick="addMember()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded transition-all active:scale-95">Add to Family</button>
                         </div>
                     </section>
-
                     <h3 class="font-bold mb-2 text-sm uppercase">👪 The Family</h3>
                     <div id="familyList" class="space-y-2 text-sm"></div>
                 </div>
 
-                <!-- 4. CALENDAR TAB -->
                 <div id="tab-calendar" class="tab-content">
                     <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
                         <h3 class="font-bold mb-3 text-sm">Upcoming Events</h3>
@@ -144,13 +133,10 @@
                     </div>
                 </div>
 
-                <!-- 5. CHAT TAB -->
                 <div id="tab-chat" class="tab-content">
                     <div class="bg-white dark:bg-gray-800 rounded-xl flex flex-col h-[60vh] border border-gray-200 dark:border-gray-700 relative">
                         <div id="chatBox" class="flex-1 p-4 overflow-y-auto space-y-3 text-sm scroll-smooth"></div>
-                        
                         <div id="chatAutocomplete" class="hidden absolute bottom-14 left-0 w-full bg-white dark:bg-gray-800 border-t dark:border-gray-700 shadow-lg max-h-32 overflow-y-auto text-sm z-10"></div>
-                        
                         <div class="p-3 border-t dark:border-gray-700 flex gap-2 relative items-center">
                             <input type="file" id="chatImageUploader" accept="image/*" capture="environment" class="hidden">
                             <button onclick="document.getElementById('chatImageUploader').click()" class="text-2xl text-gray-400 hover:text-blue-500 transition-colors">📷</button>
@@ -160,9 +146,7 @@
                     </div>
                 </div>
 
-                <!-- 6. FOOD & PANTRY TAB -->
                 <div id="tab-food" class="tab-content">
-                    
                     <section class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm mb-4">
                         <h3 class="font-bold mb-3 text-sm uppercase text-orange-500">🍲 Meal Suggestions</h3>
                         <div class="flex gap-2 mb-3">
@@ -184,7 +168,6 @@
 
             </main>
 
-            <!-- Bottom Navigation -->
             <nav class="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex justify-between px-2 py-2 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-20">
                 <button onclick="switchTab('tab-home')" class="flex flex-col items-center w-[16%] text-gray-400 hover:text-blue-500 hover:-translate-y-1 transition-all"><span class="text-xl">🏠</span><span class="text-[9px] font-bold">Home</span></button>
                 <button onclick="switchTab('tab-tasks')" class="flex flex-col items-center w-[16%] text-gray-400 hover:text-blue-500 hover:-translate-y-1 transition-all"><span class="text-xl">✅</span><span class="text-[9px] font-bold">Tasks</span></button>
@@ -199,11 +182,17 @@
     <input type="file" id="imageUploader" accept="image/*" class="hidden">
 
     <script>
+        // --- 1. CLOUD CONFIGURATION ---
+        // REPLACE THIS URL with your Cloudflare Worker URL when ready.
+        // If left blank, the app safely defaults to Local Storage without breaking.
+        const API_URL = 'https://albanofam.edwinjayr.workers.dev/'; 
+
         // --- STATE MANAGEMENT ---
         let currentUser = null;
         let isAdmin = false;
         let pendingTaskId = null;
 
+        // Default skeleton data. Only used if absolutely no cloud or local backup exists.
         let data = {
             members: [
                 { id: "m1", name: "Daddy", avatar: "👨" },
@@ -213,22 +202,46 @@
                 { id: "m5", name: "Zynab", avatar: "👩" },
                 { id: "m6", name: "Zona", avatar: "👧" }
             ],
-            tasks: [
-                { id: "t1", name: "Wash Dishes", assignees: ["m3", "m4", "m5", "m6"], time: "18:00", freq: "daily", proofReq: true, status: "pending", image: null, completedBy: null },
-                { id: "t2", name: "Sweep the Floor", assignees: ["m3", "m6"], time: "08:00", freq: "daily", proofReq: false, status: "pending", image: null, completedBy: null }
-            ],
-            events: [{ id: "e1", title: "Dentist Appointment", date: "2026-06-20" }],
-            messages: [{ sender: "System", text: "Welcome to FamilySync!" }],
-            foodMenu: ["Adobong Manok", "Leche Flan", "Fried Fish & Rice"],
-            pantryNotes: ["Low on detergent", "Need more garlic"]
+            tasks: [],
+            events: [],
+            messages: [],
+            foodMenu: [],
+            pantryNotes: []
         };
 
-        function init() {
-            syncThemeIcons(); // Set theme icons based on system check from the <head>
+        // UI Helpers for Syncing Icon
+        function showSync() { document.getElementById('syncIndicator').classList.remove('hidden'); }
+        function hideSync() { document.getElementById('syncIndicator').classList.add('hidden'); }
 
-            const saved = localStorage.getItem('fs_data_v6');
-            if (saved) data = JSON.parse(saved);
+        async function init() {
+            syncThemeIcons();
+            document.getElementById('loginLoading').classList.remove('hidden');
+            showSync();
+
+            // 1. Try to fetch from the Cloud
+            if (API_URL !== '') {
+                try {
+                    const response = await fetch(API_URL, { method: 'GET' });
+                    const json = await response.json();
+                    
+                    // Crucial Safety Check: Only overwrite if the cloud gives us real data back
+                    if (json && json.record && json.record.members) {
+                        data = json.record;
+                        localStorage.setItem('fs_backup_safe', JSON.stringify(data)); // Save a safe local copy
+                    }
+                } catch (error) {
+                    console.error("Cloud fetch failed. Falling back to local.", error);
+                    loadLocalBackup();
+                }
+            } else {
+                // If API_URL is blank, we just use local storage
+                loadLocalBackup();
+            }
+
+            hideSync();
+            document.getElementById('loginLoading').classList.add('hidden');
             
+            // Re-login user if session exists
             const savedUser = sessionStorage.getItem('fs_currentUser');
             if (savedUser) {
                 const user = data.members.find(m => m.id === savedUser);
@@ -246,9 +259,33 @@
             fetchWeather();
         }
 
-        function save() {
-            localStorage.setItem('fs_data_v6', JSON.stringify(data));
+        function loadLocalBackup() {
+            const saved = localStorage.getItem('fs_backup_safe');
+            if (saved) {
+                data = JSON.parse(saved);
+            }
+        }
+
+        async function save() {
+            // Immediately save a local copy so the UI feels fast and data isn't lost
+            localStorage.setItem('fs_backup_safe', JSON.stringify(data));
             if(currentUser) renderAll();
+
+            // Then try to upload to the cloud in the background
+            if (API_URL !== '') {
+                showSync();
+                try {
+                    await fetch(API_URL, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                } catch (error) {
+                    console.error("Failed to upload to cloud.", error);
+                    // We don't alert the user constantly, the local backup caught it.
+                }
+                hideSync();
+            }
         }
 
         // --- DASHBOARD WIDGETS ---
@@ -294,7 +331,6 @@
             const isParent = (user.name.toLowerCase() === 'daddy' || user.name.toLowerCase() === 'mommy');
 
             if (isParent) {
-                // PIN HINT HAS BEEN REMOVED HERE
                 const pin = prompt(`Enter PIN for ${user.name}:`);
                 if (pin !== "1235") {
                     alert("Incorrect PIN!");
@@ -355,7 +391,6 @@
             syncThemeIcons();
         }
 
-        // Listen for OS/System theme changes dynamically while app is open
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
             if (event.matches) {
                 document.documentElement.classList.add('dark');
@@ -389,10 +424,8 @@
         }
 
         function renderHome() {
-            // Admin Announcement Button
             document.getElementById('announceBtnContainer').style.display = isAdmin ? 'block' : 'none';
 
-            // Events
             const homeEvents = document.getElementById('homeEventList');
             if (data.events.length > 0) {
                 homeEvents.innerHTML = data.events.map(e => `
@@ -404,7 +437,6 @@
                 homeEvents.innerHTML = '<p class="text-sm text-gray-500 italic mb-4">No upcoming events.</p>';
             }
 
-            // Tasks
             const homeList = document.getElementById('homeTaskList');
             homeList.innerHTML = '';
             const allActiveTasks = data.tasks.filter(t => t.status === 'pending');
@@ -494,7 +526,7 @@
             if (msg) {
                 data.messages.push({ sender: currentUser.name, text: msg, isAnnounce: true });
                 save();
-                switchTab('tab-chat'); // Move to chat to see it
+                switchTab('tab-chat');
             }
         }
 
@@ -575,7 +607,6 @@
             }
         }
 
-        // Generic Document Image Uploader (For Tasks)
         document.getElementById('imageUploader').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file || !pendingTaskId) return;
@@ -658,7 +689,6 @@
             chatInput.focus();
         }
 
-        // Chat Image Uploader
         document.getElementById('chatImageUploader').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if(!file) return;
@@ -666,7 +696,6 @@
             reader.onload = function(event) {
                 data.messages.push({ sender: currentUser.name, image: event.target.result });
                 save();
-                
                 document.getElementById('chatImageUploader').value = '';
             };
             reader.readAsDataURL(file);
