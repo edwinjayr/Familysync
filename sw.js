@@ -1,6 +1,22 @@
 // Add these constants at the very top of your script
-const BIN_ID = '6a330b4ff5f4af5e29048c4e';
-const MASTER_KEY = '$2a$10$bRa7k1nVwwtIum06ZybFy.gXyC9D2wIH3qiYAf8FIL8HPcHbOCEqq';
+// Replace the hardcoded keys with your Worker URL
+const WORKER_URL = 'https://wispy-bonus-468e.edwinjayr.workers.dev/';
+
+async function init() {
+    const response = await fetch(`${WORKER_URL}`, { method: 'GET' });
+    const json = await response.json();
+    data = json.record;
+    // ... rest of your init
+}
+
+async function save() {
+    await fetch(`${WORKER_URL}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    // ... rest of your save
+}
 
 // --- NEW DATA SYNC FUNCTIONS ---
 
